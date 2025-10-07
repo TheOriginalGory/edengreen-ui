@@ -18,8 +18,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}>
+    <html lang="es" suppressHydrationWarning className="overflow-hidden h-full">
+      <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased overflow-hidden h-full m-0`}>
         <Suspense fallback={null}>
           {children}
           <Analytics />
