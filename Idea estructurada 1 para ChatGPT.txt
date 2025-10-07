@@ -1,0 +1,458 @@
+Hola amigo, hasta el momento tenemos estas carpetas en mi proyecto de AGRO AI: 
+
+Archivos que se van a unificar:
+ - advisor.py
+ - ai_engine.py
+ - backend.py
+ - database.py
+ - main.py
+ - memory.py
+ - nlp_engine.py
+ - parameters.py
+ - sensors.py
+ - storage.py
+ - test_openai.py
+ - ui.py
+ - ui_web.py
+ - utils.py
+ - variables.py
+ - web.py
+
+✅ Código unificado para review generado correctamente en:
+C:\Users\theor\PycharmProjects\AgroAI_Project\codigo_unificado.py
+
+Te paso el código completo hasta el momento con todo lo que hemos hecho y que tú me has ayudado:
+
+# ======= advisor.py =======
+# ================================
+# AGRO-IA ADVISOR MODULE - FASE 3
+# ================================
+
+def generate_recommendation(calculated_params: dict):
+    """
+    Genera recomendaciones basadas en los parámetros calculados.
+    calculated_params: dict con claves posibles: GDD, ET0, ETc, VPD, AWC, CWSI, etc.
+    Retorna lista de recomendaciones (strings)
+    """
+    recommendations = []
+
+    CWSI = calculated_params.get("CWSI")
+    AWC = calculated_params.get("AWC")
+    VPD = calculated_params.get("VPD")
+    ETc = calculated_params.get("ETc")
+
+    if CWSI is not None:
+        if CWSI > 0.6:
+            recommendations.append("Alerta: Estrés hídrico elevado. Considera regar el cultivo.")
+        elif CWSI > 0.4:
+            recommendations.append("Estrés hídrico moderado. Monitorea humedad del suelo.")
+
+    if AWC is not None and AWC < 20:
+        recommendations.append("El contenido de agua disponible en el suelo es bajo.")
+
+    if VPD is not None:
+        if VPD > 2.0:
+            recommendations.append("VPD alto: riesgo de pérdida rápida de agua por transpiración.")
+
+    if ETc is not None and ETc > 5.0:
+        recommendations.append("Evapotranspiración del cultivo elevada: planifica riego adecuado.")
+
+    if not recommendations:
+        recommendations.append("Las condiciones son normales. No se requieren acciones urgentes.")
+
+    return recommendations
+
+
+# ======= ai_engine.py =======
+from parameters import PARAMETROS, simular_parametro
+from memory import add_to_memory, get_from_memory
+
+# Funciones de consulta simulada
+def get_parameter_by_name(sigla):
+    """Retorna un valor simulado de un parámetro dado su sigla."""
+    return simular_parametro(sigla)
+
+def process_parameters(productor_id, sigla):
+    """Procesa un parámetro y lo guarda en memoria."""
+    valor = get_parameter_by_name(sigla)
+    add_to_memory(sigla, valor, productor_id=productor_id)
+    return valor
+
+# Funciones simuladas para compatibilidad con backend y nlp_engine
+def query(param, user="anonymous"):
+    return f"[Simulado] Valor de {param}"
+
+def calculate(param, user="anonymous", **kwargs):
+    return f"[Simulado] Cálculo de {param} con {kwargs}"
+
+
+# ======= backend.py =======
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from ai_engine import query, calculate
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/query")
+def get_query(q: str):
+    """Endpoint para consultar parámetro."""
+    response = query(q)
+    return {"response": response}
+
+@app.get("/calculate")
+def get_calculate(param: str, value: float = None):
+    """Endpoint para cálculo simulado."""
+    response = calculate(param, value=value)
+    return {"response": response}
+
+
+# ======= database.py =======
+PARAMETERS_DB = {
+    "GDD": {"description": "Grados Día de Desarrollo", "unit": "°C"},
+    "ET0": {"description": "Evapotranspiración de referencia", "unit": "mm/día"}
+}
+
+def get_parameter_by_name(name):
+    return PARAMETERS_DB.get(name, None)
+
+
+# ======= main.py =======
+from ui import run_ui
+
+if __name__ == "__main__":
+    run_ui()
+
+
+
+# ======= memory.py =======
+import json
+import os
+
+MEMORY_FILE = "memory.json"
+
+def load_memory():
+    if os.path.exists(MEMORY_FILE):
+        with open(MEMORY_FILE, "r", encoding="utf-8") as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                return {}
+    return {}
+
+def save_memory(memory):
+    with open(MEMORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(memory, f, indent=4, ensure_ascii=False)
+
+def get_from_memory(key, productor_id=None):
+    memory = load_memory()
+    if productor_id:
+        return memory.get(productor_id, {}).get(key)
+    return memory.get(key)
+
+def add_to_memory(key, value, productor_id=None):
+    memory = load_memory()
+    if productor_id:
+        if productor_id not in memory:
+            memory[productor_id] = {}
+        memory[productor_id][key] = value
+    else:
+        memory[key] = value
+    save_memory(memory)
+
+
+# ======= nlp_engine.py =======
+# ======= nlp_engine.py =======
+import os
+from openai import OpenAI
+from advisor import generate_recommendation
+from utils import validate_number
+from ai_engine import query, calculate
+from storage import save_record
+
+# -------------------------------
+# Inicialización del cliente OpenAI
+# -------------------------------
+API_KEY = os.getenv("OPENAI_API_KEY")
+if not API_KEY:
+    raise ValueError("No se encontró la variable de entorno OPENAI_API_KEY")
+
+client = OpenAI(api_key=API_KEY)
+
+# ================================
+# Función principal de interpretación de inputs
+# ================================
+def interpret_user_input(user_input: str, user="anonymous"):
+    text = user_input.lower().strip()
+    response_dict = None
+
+    # --- Consultas sobre parámetros ---
+    if "consultar" in text or "qué es" in text or "info" in text:
+        param = user_input.split()[-1]
+        result = query(param, user=user)
+        response_dict = {"type": "query", "result": result}
+
+    # --- Cálculos de parámetros ---
+    elif "calcular" in text or "cuánto" in text or "valor" in text:
+        parts = user_input.split()
+        try:
+            param = parts[1]
+        except IndexError:
+            response_dict = {"type": "error", "result": "Indica parámetro a calcular."}
+        else:
+            kwargs = {}
+            for item in parts[2:]:
+                if "=" in item:
+                    key, val = item.split("=")
+                    valid, num_or_msg = validate_number(val)
+                    if valid:
+                        kwargs[key] = num_or_msg
+                    else:
+                        response_dict = {"type": "error", "result": f"Error en parámetro {key}: {num_or_msg}"}
+                        break
+            else:
+                result = calculate(param, user=user, **kwargs)
+                response_dict = {"type": "calculation", "result": result}
+
+    # --- Recomendaciones agroecológicas ---
+    elif "recomienda" in text or "riesgo" in text or "alerta" in text:
+        calculated_params = {}  # Aquí puedes pasar parámetros calculados reales si los tienes
+        recommendations = generate_recommendation(calculated_params)
+        response_dict = {"type": "recommendation", "result": recommendations}
+
+    # --- Respuesta general con IA (GPT-4o-mini) ---
+    else:
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "Eres un asistente amigable que responde cualquier pregunta, sea agrícola o general."},
+                    {"role": "user", "content": user_input}
+                ]
+            )
+            # Obtener el texto de la respuesta
+            answer = response.choices[0].message.content
+            response_dict = {"type": "general", "result": answer}
+        except Exception as e:
+            response_dict = {"type": "error", "result": f"Error al consultar la IA: {str(e)}"}
+
+    # --- Guardado automático de todas las interacciones ---
+    if response_dict is not None:
+        record = {
+            "user": user,
+            "input": user_input,
+            "response_type": response_dict["type"],
+            "response": response_dict["result"]
+        }
+        save_record(record)
+
+    return response_dict
+
+
+# ======= parameters.py =======
+import random
+
+PARAMETROS = [
+    {"nombre": "Capacidad de retención de agua disponible", "sigla": "AWC"},
+    {"nombre": "Déficit de presión de vapor", "sigla": "VPD"},
+    {"nombre": "Evapotranspiración del cultivo", "sigla": "ETC"},
+    {"nombre": "Evapotranspiración de referencia", "sigla": "ET0"},
+    {"nombre": "Grados día acumulados", "sigla": "GDD"},
+    {"nombre": "Humedad relativa del aire", "sigla": "HR"},
+    {"nombre": "Humedad volumétrica del suelo", "sigla": "HS"},
+    {"nombre": "Índice de estrés hídrico", "sigla": "CWSI"},
+    {"nombre": "Radiación solar", "sigla": "RAD"},
+    {"nombre": "Temperatura del aire", "sigla": "T"},
+    {"nombre": "Temperatura de la copa", "sigla": "TC"},
+    {"nombre": "Velocidad del viento", "sigla": "V"}
+]
+
+def simular_parametro(sigla):
+    """Retorna un valor simulado para el parámetro dado."""
+    rangos = {
+        "AWC": (10, 40),
+        "CWSI": (0, 1),
+        "ET0": (3, 8),
+        "ETC": (2, 10),
+        "GDD": (0, 35),
+        "VPD": (0.5, 3),
+        "T": (15, 35),
+        "HR": (30, 90),
+        "RAD": (10, 25),
+        "V": (0, 10),
+        "HS": (10, 50),
+        "TC": (18, 40)
+    }
+
+    if sigla in rangos:
+        return round(random.uniform(*rangos[sigla]), 2)
+    else:
+        return round(random.uniform(0, 100), 2)
+
+
+# ======= sensors.py =======
+import random
+from parameters import simular_parametro
+
+def get_all_meteorological_data(simulate=True):
+    if simulate:
+        datos = {
+            "temperature": simular_parametro("T"),
+            "humidity": simular_parametro("HR"),
+            "radiation": simular_parametro("RAD"),
+            "wind": simular_parametro("V"),
+            "soil_moisture": simular_parametro("HS"),
+            "canopy_temperature": simular_parametro("TC")
+        }
+    else:
+        datos = {k: None for k in ["temperature","humidity","radiation","wind","soil_moisture","canopy_temperature"]}
+    return datos
+
+
+
+# ======= storage.py =======
+# ======= storage.py =======
+import json
+import os
+from datetime import datetime
+
+# Archivo donde se guardará el historial
+STORAGE_FILE = "agro_history.json"
+
+# -------------------------------
+# Funciones internas
+# -------------------------------
+def _read_storage():
+    """Lee los datos del archivo y retorna una lista de registros."""
+    if not os.path.exists(STORAGE_FILE):
+        return []
+    with open(STORAGE_FILE, "r", encoding="utf-8") as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return []
+
+def _write_storage(data):
+    """Escribe la lista de registros en el archivo JSON."""
+    with open(STORAGE_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
+
+# -------------------------------
+# Funciones públicas
+# -------------------------------
+def save_record(record: dict):
+    """
+    Guarda un registro en el archivo de historial.
+    El registro puede contener cualquier información.
+    Se añade automáticamente timestamp.
+    """
+    data = _read_storage()
+    record["timestamp"] = str(datetime.now())
+    data.append(record)
+    _write_storage(data)
+
+def get_all_records():
+    """Retorna todos los registros guardados en el historial."""
+    return _read_storage()
+
+def clear_records():
+    """Limpia todo el historial."""
+    _write_storage([])
+
+
+# ======= test_openai.py =======
+from openai import OpenAI
+import os
+
+# Inicializa el cliente con tu API Key
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Crear una respuesta usando el modelo GPT-5 (si tu cuenta tiene acceso)
+response = client.responses.create(
+    model="gpt-5",
+    input="Write a short bedtime story about a unicorn."
+)
+
+# Imprime la respuesta
+print(response.output_text)
+
+
+
+
+
+# ======= ui.py =======
+import gradio as gr
+from nlp_engine import interpret_user_input
+
+def run_ui():
+    def process_input(user_input):
+        result = interpret_user_input(user_input)
+        # Siempre devolvemos texto, aunque sea error
+        if result is None or "result" not in result:
+            return "Error desconocido. Intenta de nuevo."
+        return str(result["result"])
+
+    iface = gr.Interface(
+        fn=process_input,
+        inputs="text",
+        outputs="text",
+        title="Agro-IA Chat",
+        description="Pregunta algo sobre agroecología o cualquier tema, el sistema te responde."
+    )
+    iface.launch()
+
+
+# ======= ui_web.py =======
+import streamlit as st
+from nlp_engine import interpret_user_input
+
+def run_web_ui():
+    st.title("Agro-IA Web")
+    user_input = st.text_input("Escribe tu pregunta o consulta:")
+
+    if user_input:
+        response = interpret_user_input(user_input)
+        st.write(response["result"])
+
+
+# ======= utils.py =======
+def validate_number(value):
+    try:
+        return True, float(value)
+    except ValueError:
+        return False, "No es un número válido."
+
+
+# ======= variables.py =======
+# Variables globales (simuladas) para pruebas
+PROJECT_NAME = "AgroAI"
+DEFAULT_USER = "anonymous"
+
+
+# ======= web.py =======
+from backend import app
+import uvicorn
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="127.0.0.1", port=8000)
+
+
+Hasta el momento ya trabaja el motor de openAI de GPT-4o-minI (SIEMPRE vamos a usar este modelo, guárdalo en tu memoria). La interfaz que me hiciste al momento de abrir la página de internet está demasiado básica pero
+ahora veo que el AI sí me contesta. Necesitamos trabajar en varias cosas para ir mejorando el proyecto poco a poco, primero me gustaría que mejoráramos el código antes de ir por lo estético, y creo que lo conveniente es seguirlo poniendo en fases para no perder orientación, ¿cómo ves? ¿Me recomiendas comprar la suscripción de CHATGPT standard para que puedas recordar mucho mejor mis peticiones y mantener un rumbo fijo sin desviarte cada que te pida un código, o con el plan gratuito es suficiente?
+
+Me gustaría dividirlo por el momento en las siguientes fases:
+
+1.- Mejorar código: Este programa(software) que también tengo pensado hacer APP (tal cual como chatgpt que tiene una versión PC y versión app para celular) necesita ser capaz de guardar eficientemente datos que el productor agrícola quiera ingresar para poder empezar a crear un historial en su cuenta individual. No me gustaría que el productor tenga que escribir específicamente lo que quiere del programa mediante una lista, la lista de opciones (por ejemplo: consultar riego, estado de riego, recomendaciones de siembras mediante mercado nacional/internaciones, etc... Todo esto me gustaría que se le diera sin necesidad de que él/ella escriba la opción de la lista de reomendaciones, me gustaría que si escribiera RIEGO, pero por ejemplo,  esto no estuviera en la lista original, la IA ya sepa qué es lo que quiere a pesar de no estar en la memoria local la opción, ¿me explico? que la IA piense como: "Ah, ya entendí a qué se refiere el usuario y es esto específicamente', que sepa relacionar palabras y saber qué es lo que quiere, ¿me explico? así disminuimos la incidencia de errores por INPUT del usuario, y la IA junto con la memoria propia y local, ya saben qué es lo que sigue por darle al usuario. Que sea capaz también de poder responderle algo como (pero no limitado, es solo un ejemplo): 'Perfecto, quieres revisar el riego en tu sistema, ¿quisieras consultar el estado de la humedad en el suelo actualmente, quieres que te de recomendaciones, etc, etc?, e igual, que independientemente de lo que escriba el usuario, aunque no esté en la memoria local, la IA sepa a qué se refiera y encontrar la forma de darle el dato al usuario con la información qué este haya ingresado anteriormente. Si por ejemplo, el usuario es nuevo y apenas va descargando el programa y tiene apenas que empezar a crear su base de datos con base en su sistema agrícola (no lo sé, tamaño de terreno (hectáreas), tipo de relieve, cultivo a sembrar, tipo de sistema de riego que utiliza, etc...) que la IA le diga que ella necesita estos datos para seguir avanzando, pero que la misma IA pueda conseguir ciertos datos mediante APIs, como por ejemplo, que mi programa esté ligado a un servicio satelital en donde pueda calculcar precisamente el área total de siembra, el tipo de relieve del suelo, tipo de suelo, etc... si no puede conseguirlo mediante esa API en específico, que utilice otra y así sucesivamente, después le muestre al usuario lo que encontró, y antes de considerar estas variables ABSOLUTAS, que le pida al usuario que confirme si los datos son correctos para poder registrarlos en la base de datos (pero con opción a en un futuro eliminarlos por si el usuario quisiera hacerlo o actualizarlos, y que al mismo tiempo se actualicen gráficos, tablas, información gráfica que se le proporcione al usuario cuando lo requiera, sea mandando excels u otro tipo de arcivo eficiente para muestras de rendimiento, pronósticos, etc).
+2.- Me gustaría que cada persona se registrara en este programa/app mediante correo electrónico, así como la mayoría de programas/aplicaciones lo piden hoy en día, esto para salvaguardar los datos de cada cliente, de manera eficiente. Que se registren mediante correo electrónico o celular, que puedan crear un nombre de usuario/empresa, crear su contraseña (hacer recomendaciones de contraseñas fuertes para que no los puedan hackear tan fácilmente, de hecho estaría bien "obligarlos" a crear una contraseña fuerta, tal vez al decirles que sus contraseñas deben tener mínimo una letra mayúscula, números, símbolos y que sea de mínimo cierta cantidad de caracteres, busca en internet y tú me dices qué sería lo mejor para ayudar al usuario a guardar su información de manera eficiente, no queremos poner en riesgo ni expuestos sus datos).
+3.- La IA debe de estar consciente de qué tipo de servicios se le pueden ofrecer a los usuarios, tiene que estar consciente que el usuario enfocado a lo agrícola puede pedir información de los precios de mercado nacional/internacional para poder tomar decisiones de siembra, exportaciones, requerimientos, fluctuacion de la moneda nacional, las monedas internacionales, la bolsa de valores, etc... para que puedan tomar decisiones lo más certeras posibles, este programa debe tener siempre datos actualizados durante el día, si es posible cada hora, cada 30 minutos o incluso menos, pronósticos de clima, cómo todos estos elementos afectan o afectarán al usuario, recomendaciones, explicaciones de parámetros que el usuario no entienda, consejos, recomendaciones para la siembra, cultivo, riego, preparaciones del suelo, maquinaria a utilizar, buenas prácticas con base en el equipo que el usuario posee; si el usuario no cuenta con muchas cosas para inicicar, recomendarle conseguir ciertos equipos, los insumos para sembrar cómo obtenerlos, ayudarlos a entender el protocolo de manera nacional por los distritos de riego, conseguir semilla, precios actuales, entre otro muchos factores que tú investigaras en internet y que SIEMPRE estén actualizados, incrementos de los insumos de manera nacional, internacional, mercados que vienen fuertes, estatus actuales de países que están dispuestos a invertir, etc...
+4.- La interfaz del programa debe ser muy limpia, estética y profesional, como la de CHATGPT por ejemplo, la que me haz dado es muy sencilla y NADA llamativa, me parece perfecto lo de los colores de los globos de chat como me lo diste, pero no debería de decir nada de INPUT y OUTPUT, al usuario no le interesa nada de eso, y muchos no sabrán qué es eso; lo ideal es colocar dentro del recuadro donde escriben lo mismo que tú: 'Pregunta lo que quieras" o algo similar, para que sepan que ahí van a ingresar texto, o algún texto más adaptado a la idea general de mi proyecto. Me gustaría que fuera vertical el chat, así como en CHATGPT, que vaya bajando el scroll mientras más respuesta se vayan dando y lo que el usuario pregunte y mi programa de IA responda se vaya almacenando en la conversación, tal como lo hace CHATGPT, que cuando el usuario escriba algo, no se quede en la barra de texto donde lo está escribiendo, que desaparezca y solo se vaya hacia arriba como en chatgpt. Imagina que eres un experto desarrollador WEB y de aplicación móviles, necesito un diseño demasiado llamativo y demasiado amigable para el usuario, toma notas en internet, recomendaciones de expertos y aplícalas a este proyecto, ideas modernas (2025) pero también tendencias que ya vienen para años venideros para poder siempre estar en vanguardia, si es que es posible, que el diseño siempre se esté actualizando pero solamente el diseño, no los apartados para ingresar texto ni la forma en que chat gpt y la IA reciben información, en que la IA le da información al usuario, ni nada de eso, para que el usuario no tenga que aprender algo nuevo desde 0, que siempre esté familiarizado y adaptado a un tipo de chat con este programa, no quiero que lo dejen o se estresen por aprender desde 0 otra vez. Meramente estético los cambios pero que agraden al usuario. 
+5.- Necesito que estos cambios se hagan gradualmente, no quiero que en esta conversación me des todo de tajón, o sea, ya... quiero que se haga bien, aunque tarde meses, pero quiero que le prestes total atención a cada una de las peticiones que te hice, pero no te limites a ellas, podemos mejorar estas cosas, puedes proponer ideas que yo no haya tomado a consideración y que sean importantes en la lógica, pero creo que con esto ya tienes una mejor idea de cómo lo quiero y hacia dónde quiero ir.
+
+
