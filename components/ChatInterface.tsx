@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
+// Importamos funciones para Chat y Perfil
 import { sendMessageToBackend, fetchProfile, updateProfile } from '@/services/apiService';
 import { toast } from 'sonner';
 
@@ -59,6 +60,9 @@ export function ChatInterface() {
     const [showSettingsModal, setShowSettingsModal] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    // Referencia para el input box
+    const inputRef = useRef<HTMLInputElement>(null);
+
     // --- Cargar Perfil ---
     const loadProfile = useCallback(async () => {
         try {
@@ -81,6 +85,25 @@ export function ChatInterface() {
         }
     }, [user]);
 
+    // --- Crear Nuevo Chat ---
+    const createNewChat = () => {
+        const id = `chat_${Date.now()}`;
+        const newConv: Conversation = {
+            id,
+            title: "Nuevo Chat",
+            messages: [],
+        };
+        setConversations(prev => ({ ...prev, [id]: newConv }));
+        setCurrentId(id); // Selecciona el nuevo chat inmediatamente
+
+        // Enfoca el input después de crear el chat
+        setTimeout(() => {
+            inputRef.current?.focus();
+        }, 0);
+
+        return id;
+    };
+
     // --- Guardar Perfil ---
     const handleSaveProfile = async () => {
         setIsSavingProfile(true);
@@ -102,61 +125,12 @@ export function ChatInterface() {
         }
     };
 
-
-    // --- Efectos de ciclo de vida ---
-    useEffect(() => {
-        // Cargar conversaciones desde localStorage al iniciar
-        const savedConvos = localStorage.getItem('conversations');
-        if (savedConvos) {
-            setConversations(JSON.parse(savedConvos));
-        }
-        const savedCurrentId = localStorage.getItem('currentChatId');
-        if(savedCurrentId) {
-            setCurrentId(savedCurrentId);
-        }
-
-        // Cargar perfil al iniciar sesión
-        if(user) {
-            loadProfile();
-        }
-    }, [user, loadProfile]);
-
-    useEffect(() => {
-        // Guardar conversaciones en localStorage cuando cambien
-        localStorage.setItem('conversations', JSON.stringify(conversations));
-        if(currentId) localStorage.setItem('currentChatId', currentId);
-    }, [conversations, currentId]);
-
-    useEffect(() => {
-        if (typeof document !== 'undefined') {
-             document.documentElement.classList.toggle("dark", theme === "dark");
-        }
-    }, [theme]);
-
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [conversations, currentId, isLoading]);
-
-    // --- Manejadores de eventos y lógica ---
-
-    const createNewChat = () => {
-        const id = `chat_${Date.now()}`;
-        const newConv: Conversation = {
-            id,
-            title: "Nuevo Chat",
-            messages: [],
-        };
-        setConversations(prev => ({ ...prev, [id]: newConv }));
-        setCurrentId(id);
-        return id;
-    };
-
-    // FUNCIÓN sendMessage MODIFICADA PARA ESTABILIDAD Y STREAMING
+    // FUNCIÓN sendMessage FINAL Y ESTABLE
     const sendMessage = async () => {
-        // Condición de salida si la entrada está vacía o ya está cargando
-        if (!input.trim() || isLoading) return;
-
         const userText = input;
+
+        // Condición de salida estricta
+        if (!userText.trim() || isLoading) return;
 
         let chatId = currentId;
         if (!chatId) {
@@ -171,10 +145,9 @@ export function ChatInterface() {
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
 
-        // 1. Agregar mensaje del usuario y crear burbuja vacía del asistente en UNA SOLA OPERACIÓN
-        // Esto previene la pérdida del mensaje del usuario y asegura que el índice sea correcto.
         let assistantMessageIndex = -1;
 
+        // 1. Agregar mensaje del usuario y crear burbuja vacía del asistente en UNA SOLA OPERACIÓN
         setConversations(prev => {
             const newConversations = { ...prev };
             const conv = newConversations[currentChatId];
@@ -196,13 +169,12 @@ export function ChatInterface() {
             };
             conv.messages.push(initialAssistantMessage);
 
-            // Capturamos el índice inmediatamente después de la creación
             assistantMessageIndex = conv.messages.length - 1;
 
             return newConversations;
         });
 
-        setInput("");
+        setInput(""); // Limpiamos el input
         setIsLoading(true);
 
         try {
@@ -273,8 +245,13 @@ export function ChatInterface() {
                 const newConversations = { ...prev };
                 const conv = newConversations[currentChatId];
 
-                if (conv) {
-                    conv.messages.push(errorMessage);
+                if (conv && conv.messages[assistantMessageIndex]) {
+                    // Si el mensaje vacío existe, lo sobrescribimos con el error
+                    conv.messages[assistantMessageIndex].content = errorMessage.content;
+                    conv.messages[assistantMessageIndex].timestamp = errorMessage.timestamp;
+                } else if (conv) {
+                     // Si no existe, lo añadimos
+                     conv.messages.push(errorMessage);
                 }
 
                 return newConversations;
@@ -285,8 +262,76 @@ export function ChatInterface() {
             }
         } finally {
             setIsLoading(false);
+            // Aseguramos que el input quede enfocado después de un envío
+            inputRef.current?.focus();
         }
     };
+
+    // --- Lógica de Manejo de Envío (Unificada y Definitiva) ---
+    const handleMessageSend = (e?: React.FormEvent | React.KeyboardEvent) => {
+        // CORRECCIÓN CRÍTICA: Detenemos la acción por defecto si es evento de teclado o clic en botón
+        if (e && 'preventDefault' in e) {
+             e.preventDefault();
+        }
+
+        // Verificación doble antes de enviar
+        if (!input.trim() || isLoading || !user) return;
+
+        sendMessage();
+    };
+
+
+    // --- Evento de Teclado Final (solo Enter) ---
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        // 🚨 CORRECCIÓN DEFINITIVA: Separamos el evento de Enter
+        if (e.key === 'Enter') {
+            handleMessageSend(e); // Llama al envío, pasando el evento para que se detenga
+        }
+    };
+
+
+    // --- Efectos de ciclo de vida ---
+    const isInitialRender = useRef(true);
+
+    useEffect(() => {
+        // 1. Cargar perfil al iniciar sesión
+        if(user) {
+            loadProfile();
+        }
+
+        // 2. 🚨 Inicializar chat (Solo se ejecuta una vez al montar)
+        setConversations(prev => {
+             if (isInitialRender.current && user && Object.keys(prev).length === 0) {
+                 const id = `chat_${Date.now()}`;
+                 const newConv = { id, title: "Nuevo Chat", messages: [] };
+                 setCurrentId(id);
+                 isInitialRender.current = false;
+                 return { [id]: newConv };
+             }
+             if (isInitialRender.current && user) {
+                 isInitialRender.current = false;
+             }
+             return prev;
+        });
+
+    }, [user, loadProfile, setCurrentId]);
+
+    useEffect(() => {
+        // Guardar conversaciones en localStorage cuando cambien
+        localStorage.setItem('conversations', JSON.stringify(conversations));
+        if(currentId) localStorage.setItem('currentChatId', currentId);
+    }, [conversations, currentId]);
+
+    useEffect(() => {
+        if (typeof document !== 'undefined') {
+             document.documentElement.classList.toggle("dark", theme === "dark");
+        }
+    }, [theme]);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [conversations, currentId, isLoading]);
+
 
     const deleteConversation = (id: string) => {
         setConversations(prev => {
@@ -441,14 +486,17 @@ export function ChatInterface() {
                     <div className="max-w-3xl mx-auto flex items-end gap-2">
                         <Button size="icon" variant="ghost" className="h-12 w-12 rounded-2xl flex-shrink-0"><Plus className="h-5 w-5" /></Button>
                         <Input
+                            ref={inputRef}
                             value={input}
                             onChange={e => setInput(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && sendMessage()}
+                            // El onKeyDown llama al handler y detiene el evento
+                            onKeyDown={handleKeyDown}
                             placeholder="Escribe tu mensaje..."
-                            disabled={!user || isLoading} // Deshabilitar si no hay usuario o está cargando
+                            disabled={!user || isLoading}
                             className="flex-1 pr-12 py-6 text-base rounded-2xl"
                         />
-                        <Button onClick={sendMessage} disabled={!input.trim() || isLoading} size="icon" className="h-12 w-12 rounded-2xl flex-shrink-0">
+                        {/* 🚨 CORRECCIÓN FINAL: El botón de click llama al mismo handler, pero sin pasar el evento */}
+                        <Button onClick={() => handleMessageSend()} disabled={!input.trim() || isLoading} size="icon" className="h-12 w-12 rounded-2xl flex-shrink-0">
                             <Send className="h-5 w-5" />
                         </Button>
                     </div>
@@ -459,14 +507,14 @@ export function ChatInterface() {
             <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
                 <DialogContent className="max-w-xl">
                     <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                        <DialogTitle className="2xl font-bold flex items-center gap-2">
                            <Settings className="h-6 w-6 text-primary" /> Configuración de Usuario
                         </DialogTitle>
                         <DialogDescription>Personaliza tu perfil y preferencias de SIARI.</DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold flex items-center gap-2"><User className="h-5 w-5" /> Perfil Agrícola</h3>
+                        <h3 className="lg font-semibold flex items-center gap-2"><User className="h-5 w-5" /> Perfil Agrícola</h3>
                         <Input
                             placeholder="Tu nombre (Ej: José Carlos)"
                             value={profileInput.nombre}

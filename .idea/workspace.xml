@@ -4,19 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a390138a-33ff-4747-a48c-d1ed4246da8a" name="Changes" comment="FRONTEND VERSIÓN FINAL CHAT GPT (DESPUÉS DE AQUÍ UTILICÉ GEMINI)">
-      <change afterPath="$PROJECT_DIR$/components/ChatInterface.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/context/AuthContext.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tailwind.config.ts" afterDir="false" />
+    <list default="true" id="a390138a-33ff-4747-a48c-d1ed4246da8a" name="Changes" comment="VERSIÓN 1.0 GEMINI">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/app/globals.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/next.config.mjs" beforeDir="false" afterPath="$PROJECT_DIR$/next.config.mjs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/postcss.config.mjs" beforeDir="false" afterPath="$PROJECT_DIR$/postcss.config.mjs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Tests/CODE_TO_UNIFY_ALL_CODES.py" beforeDir="false" afterPath="$PROJECT_DIR$/Tests/CODE_TO_UNIFY_ALL_CODES.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Tests/UNIFIED_CODE.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/ChatInterface.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/ChatInterface.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -61,25 +53,25 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
-    "js.debugger.nextJs.config.created.client": "true",
-    "js.debugger.nextJs.config.created.server": "true",
-    "last_opened_file_path": "C:/Users/theor/PycharmProjects/edengreen-ui/app",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "pnpm",
-    "ts.external.directory.path": "C:\\Users\\theor\\PycharmProjects\\edengreen-ui\\node_modules\\typescript\\lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
+    &quot;js.debugger.nextJs.config.created.server&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/theor/PycharmProjects/edengreen-ui/app&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;pnpm&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\theor\\PycharmProjects\\edengreen-ui\\node_modules\\typescript\\lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\theor\PycharmProjects\edengreen-ui\app" />
@@ -117,7 +109,8 @@
       <option name="presentableId" value="Default" />
       <updated>1759880391032</updated>
       <workItem from="1759880392330" duration="5356000" />
-      <workItem from="1759887418384" duration="18560000" />
+      <workItem from="1759887418384" duration="18586000" />
+      <workItem from="1759945891274" duration="8889000" />
     </task>
     <task id="LOCAL-00001" summary="FRONTEND VERSIÓN FINAL CHAT GPT (DESPUÉS DE AQUÍ UTILICÉ GEMINI)">
       <option name="closed" value="true" />
@@ -127,7 +120,23 @@
       <option name="project" value="LOCAL" />
       <updated>1759895257003</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="VERSIÓN 1.0 GEMINI">
+      <option name="closed" value="true" />
+      <created>1759906284352</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1759906284352</updated>
+    </task>
+    <task id="LOCAL-00003" summary="VERSIÓN 1.0 GEMINI">
+      <option name="closed" value="true" />
+      <created>1759906290142</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1759906290142</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -135,6 +144,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="FRONTEND VERSIÓN FINAL CHAT GPT (DESPUÉS DE AQUÍ UTILICÉ GEMINI)" />
-    <option name="LAST_COMMIT_MESSAGE" value="FRONTEND VERSIÓN FINAL CHAT GPT (DESPUÉS DE AQUÍ UTILICÉ GEMINI)" />
+    <MESSAGE value="VERSIÓN 1.0 GEMINI" />
+    <option name="LAST_COMMIT_MESSAGE" value="VERSIÓN 1.0 GEMINI" />
   </component>
 </project>
