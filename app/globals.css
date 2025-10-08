@@ -1,364 +1,102 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@tailwind base; /* Carga las utilidades y clases base de Tailwind primero */
+@tailwind components;
+@tailwind utilities;
 
-@custom-variant dark (&:is(.dark *));
+@layer base {
+  /* Estas variables de color deben estar disponibles para que Tailwind las use */
+  :root {
+    /* Updated to cream/beige tones from logo for light mode */
+    --background: oklch(0.96 0.02 75);
+    --foreground: oklch(0.2 0.05 145);
+    --card: oklch(0.94 0.02 75);
+    --card-foreground: oklch(0.2 0.05 145);
+    --popover: oklch(0.96 0.02 75);
+    --popover-foreground: oklch(0.2 0.05 145);
+    /* Deep forest green from logo background */
+    --primary: oklch(0.35 0.12 145);
+    /* Cream color for text on green */
+    --primary-foreground: oklch(0.88 0.03 75);
+    --secondary: oklch(0.9 0.02 75);
+    --secondary-foreground: oklch(0.2 0.05 145);
+    --muted: oklch(0.92 0.02 75);
+    --muted-foreground: oklch(0.45 0.04 145);
+    /* Accent using the cream/beige from logo */
+    --accent: oklch(0.88 0.03 75);
+    --accent-foreground: oklch(0.2 0.05 145);
+    --destructive: oklch(0.55 0.25 25);
+    --destructive-foreground: oklch(0.96 0.02 75);
+    --border: oklch(0.85 0.02 75);
+    --input: oklch(0.94 0.02 75);
+    --ring: oklch(0.35 0.12 145);
+    --radius: 1rem;
+    --sidebar: oklch(0.94 0.02 75);
+    --sidebar-foreground: oklch(0.2 0.05 145);
+    --sidebar-primary: oklch(0.35 0.12 145);
+    --sidebar-primary-foreground: oklch(0.88 0.03 75);
+    --sidebar-accent: oklch(0.9 0.02 75);
+    --sidebar-accent-foreground: oklch(0.2 0.05 145);
+    --sidebar-border: oklch(0.85 0.02 75);
+    --sidebar-ring: oklch(0.35 0.12 145);
+    --user-bubble: oklch(0.35 0.12 145);
+    --ai-bubble: oklch(0.92 0.02 75);
+    /* Added Cinzel font for SIARI branding */
+    --font-cinzel: "Cinzel", serif;
+  }
 
-:root {
-  /* Updated to cream/beige tones from logo for light mode */
-  --background: oklch(0.96 0.02 75);
-  --foreground: oklch(0.2 0.05 145);
-  --card: oklch(0.94 0.02 75);
-  --card-foreground: oklch(0.2 0.05 145);
-  --popover: oklch(0.96 0.02 75);
-  --popover-foreground: oklch(0.2 0.05 145);
-  /* Deep forest green from logo background */
-  --primary: oklch(0.35 0.12 145);
-  /* Cream color for text on green */
-  --primary-foreground: oklch(0.88 0.03 75);
-  --secondary: oklch(0.9 0.02 75);
-  --secondary-foreground: oklch(0.2 0.05 145);
-  --muted: oklch(0.92 0.02 75);
-  --muted-foreground: oklch(0.45 0.04 145);
-  /* Accent using the cream/beige from logo */
-  --accent: oklch(0.88 0.03 75);
-  --accent-foreground: oklch(0.2 0.05 145);
-  --destructive: oklch(0.55 0.25 25);
-  --destructive-foreground: oklch(0.96 0.02 75);
-  --border: oklch(0.85 0.02 75);
-  --input: oklch(0.94 0.02 75);
-  --ring: oklch(0.35 0.12 145);
-  --chart-1: oklch(0.35 0.12 145);
-  --chart-2: oklch(0.88 0.03 75);
-  --chart-3: oklch(0.4 0.1 150);
-  --chart-4: oklch(0.45 0.08 140);
-  --chart-5: oklch(0.5 0.1 148);
-  --radius: 1rem;
-  --sidebar: oklch(0.94 0.02 75);
-  --sidebar-foreground: oklch(0.2 0.05 145);
-  --sidebar-primary: oklch(0.35 0.12 145);
-  --sidebar-primary-foreground: oklch(0.88 0.03 75);
-  --sidebar-accent: oklch(0.9 0.02 75);
-  --sidebar-accent-foreground: oklch(0.2 0.05 145);
-  --sidebar-border: oklch(0.85 0.02 75);
-  --sidebar-ring: oklch(0.35 0.12 145);
-  --user-bubble: oklch(0.35 0.12 145);
-  --ai-bubble: oklch(0.92 0.02 75);
-  /* Added Cinzel font for SIARI branding */
-  --font-cinzel: "Cinzel", serif;
-}
-
-.dark {
-  /* Updated to deep forest green tones from logo for dark mode */
-  --background: oklch(0.12 0.02 145);
-  /* Cream/beige for text */
-  --foreground: oklch(0.88 0.03 75);
-  --card: oklch(0.15 0.02 145);
-  --card-foreground: oklch(0.88 0.03 75);
-  --popover: oklch(0.15 0.02 145);
-  --popover-foreground: oklch(0.88 0.03 75);
-  /* Brighter green for dark mode primary */
-  --primary: oklch(0.5 0.15 145);
-  /* Dark green for text on bright green */
-  --primary-foreground: oklch(0.12 0.02 145);
-  --secondary: oklch(0.2 0.02 145);
-  --secondary-foreground: oklch(0.88 0.03 75);
-  --muted: oklch(0.2 0.02 145);
-  /* Muted cream for secondary text */
-  --muted-foreground: oklch(0.65 0.02 75);
-  /* Cream accent for dark mode */
-  --accent: oklch(0.88 0.03 75);
-  --accent-foreground: oklch(0.12 0.02 145);
-  --destructive: oklch(0.6 0.25 25);
-  --destructive-foreground: oklch(0.88 0.03 75);
-  --border: oklch(0.25 0.02 145);
-  --input: oklch(0.2 0.02 145);
-  --ring: oklch(0.5 0.15 145);
-  --chart-1: oklch(0.5 0.15 145);
-  --chart-2: oklch(0.88 0.03 75);
-  --chart-3: oklch(0.55 0.12 150);
-  --chart-4: oklch(0.6 0.1 140);
-  --chart-5: oklch(0.65 0.12 148);
-  --sidebar: oklch(0.1 0.02 145);
-  --sidebar-foreground: oklch(0.88 0.03 75);
-  --sidebar-primary: oklch(0.5 0.15 145);
-  --sidebar-primary-foreground: oklch(0.12 0.02 145);
-  --sidebar-accent: oklch(0.18 0.02 145);
-  --sidebar-accent-foreground: oklch(0.88 0.03 75);
-  --sidebar-border: oklch(0.22 0.02 145);
-  --sidebar-ring: oklch(0.5 0.15 145);
-  --user-bubble: oklch(0.22 0.05 145);
-  --ai-bubble: oklch(0.15 0.02 145);
-}
-
-@theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  /* Added Cinzel font for SIARI branding */
-  --font-display: var(--font-cinzel);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-user-bubble: var(--user-bubble);
-  --color-ai-bubble: var(--ai-bubble);
+  .dark {
+    /* Updated to deep forest green tones from logo for dark mode */
+    --background: oklch(0.12 0.02 145);
+    /* Cream/beige for text */
+    --foreground: oklch(0.88 0.03 75);
+    --card: oklch(0.15 0.02 145);
+    --card-foreground: oklch(0.88 0.03 75);
+    --popover: oklch(0.15 0.02 145);
+    --popover-foreground: oklch(0.88 0.03 75);
+    /* Brighter green for dark mode primary */
+    --primary: oklch(0.5 0.15 145);
+    /* Dark green for text on bright green */
+    --primary-foreground: oklch(0.12 0.02 145);
+    --secondary: oklch(0.2 0.02 145);
+    --secondary-foreground: oklch(0.88 0.03 75);
+    --muted: oklch(0.2 0.02 145);
+    /* Muted cream for secondary text */
+    --muted-foreground: oklch(0.65 0.02 75);
+    /* Cream accent for dark mode */
+    --accent: oklch(0.88 0.03 75);
+    --accent-foreground: oklch(0.12 0.02 145);
+    --destructive: oklch(0.6 0.25 25);
+    --destructive-foreground: oklch(0.88 0.03 75);
+    --border: oklch(0.25 0.02 145);
+    --input: oklch(0.2 0.02 145);
+    --ring: oklch(0.5 0.15 145);
+    --sidebar: oklch(0.1 0.02 145);
+    --sidebar-foreground: oklch(0.88 0.03 75);
+    --sidebar-primary: oklch(0.5 0.15 145);
+    --sidebar-primary-foreground: oklch(0.12 0.02 145);
+    --sidebar-accent: oklch(0.18 0.02 145);
+    --sidebar-accent-foreground: oklch(0.88 0.03 75);
+    --sidebar-border: oklch(0.22 0.02 145);
+    --sidebar-ring: oklch(0.5 0.15 145);
+    --user-bubble: oklch(0.22 0.05 145);
+    --ai-bubble: oklch(0.15 0.02 145);
+  }
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    /* Aquí es donde se define la clase que estaba causando el error */
+    /* Pero la pondremos de forma más genérica para evitar conflictos */
+    /* @apply border-border; */
   }
-  html,
+
+  /* Aquí usamos las variables que definiste tú mismo,
+     pero nos aseguramos de que el `theme` y el `base` se carguen primero */
+  * {
+    @apply border-border;
+  }
+
   body {
-    @apply bg-background text-foreground overflow-hidden h-full;
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
-}
-
-/* High-tech grid pattern background - very subtle */
-.agricultural-pattern {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 0;
-  opacity: 0.03;
-  pointer-events: none;
-  /* Updated grid color to match new green theme */
-  background-image: linear-gradient(oklch(0.35 0.12 145 / 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(0.35 0.12 145 / 0.1) 1px, transparent 1px);
-  background-size: 50px 50px;
-}
-
-.dark .agricultural-pattern {
-  opacity: 0.04;
-  /* Updated to more muted green for dark mode */
-  background-image: linear-gradient(oklch(0.5 0.15 145 / 0.12) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(0.5 0.15 145 / 0.12) 1px, transparent 1px);
-  background-size: 50px 50px;
-}
-
-/* Custom scrollbar styling for better visibility */
-[data-radix-scroll-area-viewport] {
-  scrollbar-width: thin;
-  /* Updated scrollbar color to match new green theme */
-  scrollbar-color: oklch(0.35 0.12 145 / 0.5) oklch(0.9 0.02 75);
-}
-
-[data-radix-scroll-area-viewport]::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-[data-radix-scroll-area-viewport]::-webkit-scrollbar-track {
-  background: oklch(0.92 0.02 75);
-  border-radius: 5px;
-}
-
-[data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb {
-  background-color: oklch(0.35 0.12 145 / 0.5);
-  border-radius: 5px;
-  border: 2px solid oklch(0.92 0.02 75);
-}
-
-[data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb:hover {
-  background-color: oklch(0.35 0.12 145 / 0.7);
-}
-
-.dark [data-radix-scroll-area-viewport] {
-  /* Updated to muted green for dark mode scrollbar */
-  scrollbar-color: oklch(0.5 0.15 145 / 0.6) oklch(0.2 0.02 145);
-}
-
-.dark [data-radix-scroll-area-viewport]::-webkit-scrollbar-track {
-  background: oklch(0.2 0.02 145);
-}
-
-.dark [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb {
-  background-color: oklch(0.5 0.15 145 / 0.6);
-  border: 2px solid oklch(0.2 0.02 145);
-}
-
-.dark [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb:hover {
-  background-color: oklch(0.5 0.15 145 / 0.8);
-}
-
-/* Force scrollbar to always be visible */
-[data-radix-scroll-area-scrollbar] {
-  display: flex !important;
-}
-
-/* Glassmorphism effect for cards */
-.glass-effect {
-  background: oklch(0.94 0.02 75 / 0.8);
-  backdrop-filter: blur(12px);
-  border: 1px solid oklch(0.85 0.02 75 / 0.5);
-}
-
-.dark .glass-effect {
-  background: oklch(0.15 0.02 145 / 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid oklch(0.25 0.02 145 / 0.5);
-}
-
-/* Glow effect for primary elements */
-.glow-primary {
-  /* Updated glow to match new green theme */
-  box-shadow: 0 0 20px oklch(0.35 0.12 145 / 0.3);
-}
-
-.dark .glow-primary {
-  /* Updated to muted green glow for dark mode */
-  box-shadow: 0 0 30px oklch(0.5 0.15 145 / 0.35);
-}
-
-/* Added logo enhancement effects */
-.logo-glow {
-  filter: drop-shadow(0 0 20px oklch(0.5 0.15 145 / 0.6)) drop-shadow(0 0 40px oklch(0.5 0.15 145 / 0.4))
-    drop-shadow(0 4px 8px oklch(0 0 0 / 0.3));
-}
-
-.dark .logo-glow {
-  filter: drop-shadow(0 0 25px oklch(0.5 0.15 145 / 0.8)) drop-shadow(0 0 50px oklch(0.5 0.15 145 / 0.5))
-    drop-shadow(0 6px 12px oklch(0 0 0 / 0.5));
-}
-
-@keyframes logo-pulse {
-  0%,
-  100% {
-    filter: drop-shadow(0 0 20px oklch(0.5 0.15 145 / 0.6)) drop-shadow(0 0 40px oklch(0.5 0.15 145 / 0.4))
-      drop-shadow(0 4px 8px oklch(0 0 0 / 0.3));
-  }
-  50% {
-    filter: drop-shadow(0 0 30px oklch(0.5 0.15 145 / 0.8)) drop-shadow(0 0 60px oklch(0.5 0.15 145 / 0.6))
-      drop-shadow(0 6px 12px oklch(0 0 0 / 0.4));
-  }
-}
-
-.logo-pulse {
-  animation: logo-pulse 3s ease-in-out infinite;
-}
-
-/* Added floating particles animation for center logo */
-@keyframes float-particle {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(var(--tx), var(--ty)) scale(0.5);
-    opacity: 0;
-  }
-}
-
-.floating-particles {
-  position: relative;
-}
-
-.floating-particles::before,
-.floating-particles::after {
-  content: "";
-  position: absolute;
-  width: 4px;
-  height: 4px;
-  background: oklch(0.5 0.15 145);
-  border-radius: 50%;
-  animation: float-particle 4s ease-in-out infinite;
-}
-
-.floating-particles::before {
-  --tx: -60px;
-  --ty: -80px;
-  top: 50%;
-  left: 50%;
-  animation-delay: 0s;
-}
-
-.floating-particles::after {
-  --tx: 60px;
-  --ty: -80px;
-  top: 50%;
-  left: 50%;
-  animation-delay: 2s;
-}
-
-/* Added shimmer effect for center logo */
-@keyframes shimmer {
-  0% {
-    background-position: -200% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
-}
-
-.logo-shimmer {
-  position: relative;
-  overflow: hidden;
-}
-
-.logo-shimmer::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent 0%, oklch(0.88 0.03 75 / 0.3) 50%, transparent 100%);
-  background-size: 200% 100%;
-  animation: shimmer 3s ease-in-out infinite;
-  pointer-events: none;
-}
-
-/* Added gentle floating animation */
-@keyframes gentle-float {
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.gentle-float {
-  animation: gentle-float 4s ease-in-out infinite;
 }
