@@ -8,14 +8,13 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
   Plus,
   Sun,
   Moon,
   Send,
-  Leaf,
   MessageSquare,
-  Sparkles,
   Search,
   Trash2,
   Edit2,
@@ -26,6 +25,14 @@ import {
   Camera,
   Monitor,
   Settings,
+  MicOff,
+  XCircle,
+  User,
+  Bell,
+  Lock,
+  Palette,
+  Globe,
+  Info,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -57,6 +64,20 @@ export default function EdenGreenChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [attachMenuOpen, setAttachMenuOpen] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  const [showCameraModal, setShowCameraModal] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const mediaStreamRef = useRef<MediaStream | null>(null)
+  const recognitionRef = useRef<any>(null)
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      sendMessage()
+    }
+  }
 
   useEffect(() => {
     checkBackendStatus()
@@ -244,25 +265,191 @@ export default function EdenGreenChat() {
   }
 
   const handleVoiceInput = () => {
-    console.log("[v0] Voice input requested")
     setAttachMenuOpen(false)
-  }
 
-  const handleCamera = () => {
-    console.log("[v0] Camera requested")
-    setAttachMenuOpen(false)
-  }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
 
-  const handleScreenshot = () => {
-    console.log("[v0] Screenshot requested")
-    setAttachMenuOpen(false)
-  }
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      sendMessage()
+    if (!SpeechRecognition) {
+      alert("Tu navegador no soporta reconocimiento de voz. Intenta con Chrome o Edge.")
+      return
     }
+
+    if (isRecording) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+      setIsRecording(false)
+      return
+    }
+
+    const recognition = new SpeechRecognition()
+    recognition.lang = "es-ES"
+    recognition.continuous = true
+    recognition.interimResults = true
+    recognition.maxAlternatives = 1
+
+    recognition.onstart = () => {
+      setIsRecording(true)
+    }
+
+    recognition.onresult = (event: any) => {
+      let finalTranscript = ""
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + " "
+        }
+      }
+
+      if (finalTranscript) {
+        setInput((prev) => prev + finalTranscript)
+      }
+    }
+
+    recognition.onerror = (event: any) => {
+      setIsRecording(false)
+
+      if (event.error === "not-allowed" || event.error === "permission-denied") {
+        alert(
+          "Permiso de micrófono denegado. Por favor, permite el acceso al micrófono en la configuración de tu navegador.",
+        )
+      } else if (event.error === "no-speech") {
+        console.log("[v0] No speech detected")
+      } else if (event.error === "audio-capture") {
+        alert("No se detectó ningún micrófono. Por favor, conecta un micrófono e intenta de nuevo.")
+      } else if (event.error === "network") {
+        alert("Error de red. Verifica tu conexión a internet.")
+      } else {
+        console.error("[v0] Speech recognition error:", event.error)
+      }
+    }
+
+    recognition.onend = () => {
+      setIsRecording(false)
+    }
+
+    recognitionRef.current = recognition
+
+    try {
+      recognition.start()
+    } catch (error) {
+      console.error("[v0] Failed to start recognition:", error)
+      setIsRecording(false)
+      alert("No se pudo iniciar el reconocimiento de voz. Por favor, intenta de nuevo.")
+    }
+  }
+
+  const handleCamera = async () => {
+    setAttachMenuOpen(false)
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: false,
+      })
+
+      mediaStreamRef.current = stream
+      setShowCameraModal(true)
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        videoRef.current.play()
+      }
+    } catch (error: any) {
+      console.error("[v0] Camera access error:", error)
+
+      if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
+        alert(
+          "Permiso de cámara denegado. Por favor, permite el acceso a la cámara en la configuración de tu navegador.",
+        )
+      } else if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
+        alert("No se detectó ninguna cámara. Por favor, conecta una cámara e intenta de nuevo.")
+      } else if (error.name === "NotReadableError" || error.name === "TrackStartError") {
+        alert(
+          "La cámara está siendo usada por otra aplicación. Por favor, cierra otras aplicaciones que usen la cámara.",
+        )
+      } else {
+        alert("No se pudo acceder a la cámara. Error: " + error.message)
+      }
+    }
+  }
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current
+      const canvas = canvasRef.current
+
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+
+      const ctx = canvas.getContext("2d")
+      if (ctx) {
+        ctx.drawImage(video, 0, 0)
+        const imageData = canvas.toDataURL("image/png")
+        setCapturedImage(imageData)
+        closeCameraModal()
+        console.log("[v0] Photo captured")
+      }
+    }
+  }
+
+  const closeCameraModal = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop())
+      mediaStreamRef.current = null
+    }
+    setShowCameraModal(false)
+  }
+
+  const handleScreenshot = async () => {
+    setAttachMenuOpen(false)
+
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          mediaSource: "screen" as any,
+          cursor: "always",
+        },
+      })
+
+      const video = document.createElement("video")
+      video.srcObject = stream
+      video.play()
+
+      video.onloadedmetadata = () => {
+        const canvas = document.createElement("canvas")
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+
+        const ctx = canvas.getContext("2d")
+        if (ctx) {
+          ctx.drawImage(video, 0, 0)
+          const imageData = canvas.toDataURL("image/png")
+          setCapturedImage(imageData)
+        }
+
+        stream.getTracks().forEach((track) => track.stop())
+      }
+    } catch (error: any) {
+      if (error.name === "NotAllowedError") {
+        console.log("[v0] User cancelled screen capture")
+      } else if (error.name === "NotSupportedError") {
+        alert("Tu navegador no soporta captura de pantalla. Intenta con Chrome, Edge o Firefox.")
+      } else if (error.message && error.message.includes("permissions policy")) {
+        // This is a preview environment limitation
+        alert(
+          "La captura de pantalla está restringida en el entorno de vista previa por políticas de seguridad.\n\n" +
+            "Esta función funcionará correctamente cuando despliegues la aplicación en un navegador real o en producción.",
+        )
+      } else {
+        alert("No se pudo capturar la pantalla. Esto puede deberse a restricciones de seguridad del navegador.")
+      }
+    }
+  }
+
+  const removeCapturedImage = () => {
+    setCapturedImage(null)
   }
 
   const currentConversation = currentId ? conversations[currentId] : null
@@ -275,30 +462,17 @@ export default function EdenGreenChat() {
       {/* Sidebar */}
       <aside className="w-[280px] border-r border-sidebar-border bg-sidebar/95 backdrop-blur-sm flex flex-col relative z-10">
         <div className="p-4">
-          <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 shadow-xl">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 p-4 rounded-2xl glass-effect glow-primary">
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/30 blur-2xl rounded-full" />
               <div className="relative">
-                <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
-                <div className="relative bg-gradient-to-br from-primary to-accent p-2 rounded-xl shadow-lg">
-                  <Leaf className="h-6 w-6 text-primary-foreground" />
-                </div>
-                <Sparkles className="h-3 w-3 text-accent absolute -top-1 -right-1 animate-pulse" />
-              </div>
-              <div>
-                <h1 className="font-display font-bold text-xl tracking-tight text-sidebar-foreground">
-                  Eden<span className="text-primary">GREEN</span>
-                </h1>
-                <p className="text-[10px] text-muted-foreground font-medium tracking-wide">AI AGRÍCOLA</p>
+                <img src="/logo-yaqui.png" alt="SIARI Logo" className="h-16 w-16 object-contain logo-pulse" />
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-lg hover:bg-sidebar-accent"
-              title="Configuración"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
+            <div>
+              <h1 className="font-display font-black text-2xl tracking-tight text-sidebar-foreground">SIARI</h1>
+              <p className="text-[9px] text-muted-foreground font-bold tracking-widest uppercase">AI Agrícola</p>
+            </div>
           </div>
         </div>
 
@@ -311,7 +485,7 @@ export default function EdenGreenChat() {
         <div className="px-4 pb-3">
           <Button
             onClick={createNewChat}
-            className="w-full justify-start gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all"
+            className="w-full justify-start gap-2 bg-primary hover:bg-primary/90 text-white font-semibold hover:shadow-xl transition-all shadow-lg"
             size="lg"
           >
             <Plus className="h-5 w-5" />
@@ -321,12 +495,12 @@ export default function EdenGreenChat() {
 
         <div className="px-4 pb-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-sidebar-foreground/60" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar chats..."
-              className="pl-9 bg-sidebar-accent border-sidebar-border"
+              className="pl-9 bg-sidebar-accent border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/60"
             />
           </div>
         </div>
@@ -407,9 +581,18 @@ export default function EdenGreenChat() {
           </div>
         </ScrollArea>
 
-        <div className="p-4 border-t border-sidebar-border">
+        <div className="p-4 border-t border-sidebar-border space-y-3">
+          <Button
+            variant="ghost"
+            onClick={() => setShowSettingsModal(true)}
+            className="w-full justify-start gap-3 hover:bg-sidebar-accent text-sidebar-foreground"
+          >
+            <Settings className="h-4 w-4" />
+            <span className="text-sm font-medium">Configuración</span>
+          </Button>
+
           <p className="text-xs text-center text-muted-foreground font-medium">
-            © 2025 EdenGREEN
+            © 2025 SIARI
             <br />
             <span className="text-[10px]">Desarrollado por José Carlos</span>
           </p>
@@ -419,27 +602,7 @@ export default function EdenGreenChat() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden relative z-10">
         <header className="border-b border-border bg-card/50 backdrop-blur-sm flex-shrink-0">
-          <div className="flex items-center justify-between px-6 py-3">
-            <div className="flex items-center gap-3">
-              <div
-                className={cn(
-                  "px-3 py-1.5 rounded-full text-xs font-semibold border",
-                  "flex items-center gap-2",
-                  backendStatus.active
-                    ? "bg-primary/10 text-primary border-primary/20"
-                    : "bg-muted text-muted-foreground border-border",
-                )}
-              >
-                <div
-                  className={cn(
-                    "h-2 w-2 rounded-full",
-                    backendStatus.active ? "bg-primary animate-pulse" : "bg-muted-foreground",
-                  )}
-                />
-                {backendStatus.active ? "Conectado a OpenAI" : "Modo local"}
-              </div>
-            </div>
-
+          <div className="flex items-center justify-end px-6 py-3">
             <Button
               variant="ghost"
               size="icon"
@@ -453,19 +616,21 @@ export default function EdenGreenChat() {
 
         {showEmptyState ? (
           <div className="flex-1 flex items-center justify-center p-6">
-            <div className="text-center space-y-6 max-w-2xl">
+            <div className="text-center space-y-8 max-w-2xl">
               <div className="relative inline-block">
-                <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
-                <div className="relative bg-gradient-to-br from-primary to-accent p-6 rounded-3xl shadow-2xl">
-                  <Leaf className="h-16 w-16 text-primary-foreground" />
+                <div className="absolute inset-0 bg-primary/30 blur-3xl rounded-full animate-pulse" />
+                <div className="relative">
+                  <img src="/logo-yaqui.png" alt="SIARI Logo" className="h-32 w-32 object-contain mx-auto logo-pulse" />
                 </div>
               </div>
-              <div className="space-y-3">
-                <h2 className="font-display text-4xl font-bold tracking-tight text-foreground">
+              <div className="space-y-4">
+                <h2 className="font-display text-5xl font-black tracking-tighter text-foreground">
                   ¿En qué puedo ayudarte hoy?
                 </h2>
-                <p className="text-lg text-muted-foreground font-medium">
-                  Soy EdenGREEN, tu asistente de inteligencia artificial especializado en agricultura sostenible
+                <p className="text-xl text-muted-foreground font-medium leading-relaxed">
+                  Soy <span className="text-primary font-bold">SIARI</span>, tu asistente de inteligencia artificial
+                  <br />
+                  especializado en agricultura sostenible
                 </p>
               </div>
             </div>
@@ -510,24 +675,53 @@ export default function EdenGreenChat() {
 
         <div className="border-t border-border bg-card/50 backdrop-blur-sm p-4 flex-shrink-0">
           <div className="max-w-3xl mx-auto">
+            {capturedImage && (
+              <div className="mb-3 relative inline-block">
+                <img
+                  src={capturedImage || "/placeholder.svg"}
+                  alt="Captured"
+                  className="max-h-32 rounded-lg border-2 border-primary shadow-lg"
+                />
+                <Button
+                  size="icon"
+                  variant="destructive"
+                  onClick={removeCapturedImage}
+                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                >
+                  <XCircle className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            {isRecording && (
+              <div className="mb-3 flex items-center gap-2 text-primary animate-pulse">
+                <div className="h-3 w-3 rounded-full bg-primary" />
+                <span className="text-sm font-semibold">Grabando audio...</span>
+                <Button size="sm" variant="outline" onClick={handleVoiceInput} className="ml-2 bg-transparent">
+                  <MicOff className="h-4 w-4 mr-1" />
+                  Detener
+                </Button>
+              </div>
+            )}
+
             <div className="flex items-end gap-2">
               <Popover open={attachMenuOpen} onOpenChange={setAttachMenuOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-12 w-12 rounded-2xl hover:bg-accent/10 flex-shrink-0"
+                    className="h-12 w-12 rounded-2xl hover:bg-primary/10 text-foreground hover:text-foreground flex-shrink-0"
                     title="Adjuntar"
                   >
                     <Plus className="h-5 w-5" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent side="top" align="start" className="w-56 p-2">
+                <PopoverContent side="top" align="center" sideOffset={24} collisionPadding={20} className="w-56 p-2">
                   <div className="flex flex-col gap-1">
                     <Button
                       variant="ghost"
                       onClick={handleFileAttach}
-                      className="justify-start gap-3 h-10 px-3 hover:bg-accent/10"
+                      className="justify-start gap-3 h-10 px-3 hover:bg-primary/10 text-popover-foreground hover:text-popover-foreground"
                     >
                       <Paperclip className="h-4 w-4" />
                       <span className="text-sm">Adjuntar archivo</span>
@@ -535,7 +729,7 @@ export default function EdenGreenChat() {
                     <Button
                       variant="ghost"
                       onClick={handleCamera}
-                      className="justify-start gap-3 h-10 px-3 hover:bg-accent/10"
+                      className="justify-start gap-3 h-10 px-3 hover:bg-primary/10 text-popover-foreground hover:text-popover-foreground"
                     >
                       <Camera className="h-4 w-4" />
                       <span className="text-sm">Tomar foto</span>
@@ -543,7 +737,7 @@ export default function EdenGreenChat() {
                     <Button
                       variant="ghost"
                       onClick={handleScreenshot}
-                      className="justify-start gap-3 h-10 px-3 hover:bg-accent/10"
+                      className="justify-start gap-3 h-10 px-3 hover:bg-primary/10 text-popover-foreground hover:text-popover-foreground"
                     >
                       <Monitor className="h-4 w-4" />
                       <span className="text-sm">Capturar pantalla</span>
@@ -551,7 +745,7 @@ export default function EdenGreenChat() {
                     <Button
                       variant="ghost"
                       onClick={handleVoiceInput}
-                      className="justify-start gap-3 h-10 px-3 hover:bg-accent/10"
+                      className="justify-start gap-3 h-10 px-3 hover:bg-primary/10 text-popover-foreground hover:text-popover-foreground"
                     >
                       <Mic className="h-4 w-4" />
                       <span className="text-sm">Entrada de voz</span>
@@ -567,7 +761,7 @@ export default function EdenGreenChat() {
                   onKeyDown={handleKeyPress}
                   placeholder="Escribe aquí tu mensaje..."
                   disabled={isLoading}
-                  className="pr-12 py-6 text-base rounded-2xl bg-background border-border shadow-sm resize-none"
+                  className="pr-12 py-6 text-base rounded-2xl bg-background border-border shadow-sm resize-none placeholder:text-muted-foreground"
                 />
               </div>
 
@@ -583,6 +777,185 @@ export default function EdenGreenChat() {
           </div>
         </div>
       </main>
+
+      {/* Settings Modal */}
+      <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+              <Settings className="h-6 w-6 text-primary" />
+              Configuración
+            </DialogTitle>
+            <DialogDescription>Personaliza tu experiencia con SIARI</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Account Settings */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <User className="h-5 w-5 text-primary" />
+                Cuenta
+              </h3>
+              <div className="space-y-2 pl-7">
+                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-accent/10 cursor-pointer">
+                  <div>
+                    <p className="font-medium">Nombre de usuario</p>
+                    <p className="text-sm text-muted-foreground">{userName}</p>
+                  </div>
+                  <Button variant="ghost" size="sm">
+                    Editar
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-accent/10 cursor-pointer">
+                  <div>
+                    <p className="font-medium">Correo electrónico</p>
+                    <p className="text-sm text-muted-foreground">usuario@ejemplo.com</p>
+                  </div>
+                  <Button variant="ghost" size="sm">
+                    Editar
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Appearance Settings */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Palette className="h-5 w-5 text-primary" />
+                Apariencia
+              </h3>
+              <div className="space-y-2 pl-7">
+                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-accent/10">
+                  <div>
+                    <p className="font-medium">Tema</p>
+                    <p className="text-sm text-muted-foreground">Claro u oscuro</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+                    {theme === "dark" ? "Oscuro" : "Claro"}
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-accent/10">
+                  <div>
+                    <p className="font-medium">Tamaño de fuente</p>
+                    <p className="text-sm text-muted-foreground">Ajusta el tamaño del texto</p>
+                  </div>
+                  <Button variant="ghost" size="sm">
+                    Medio
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Privacy & Security */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Lock className="h-5 w-5 text-primary" />
+                Privacidad y Seguridad
+              </h3>
+              <div className="space-y-2 pl-7">
+                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-accent/10 cursor-pointer">
+                  <div>
+                    <p className="font-medium">Borrar historial de conversaciones</p>
+                    <p className="text-sm text-muted-foreground">Elimina todas tus conversaciones</p>
+                  </div>
+                  <Button variant="destructive" size="sm">
+                    Borrar
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-accent/10 cursor-pointer">
+                  <div>
+                    <p className="font-medium">Exportar datos</p>
+                    <p className="text-sm text-muted-foreground">Descarga tus conversaciones</p>
+                  </div>
+                  <Button variant="ghost" size="sm">
+                    Exportar
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Notifications */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Bell className="h-5 w-5 text-primary" />
+                Notificaciones
+              </h3>
+              <div className="space-y-2 pl-7">
+                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-accent/10">
+                  <div>
+                    <p className="font-medium">Sonidos</p>
+                    <p className="text-sm text-muted-foreground">Reproducir sonidos de notificación</p>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    Activado
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-accent/10">
+                  <div>
+                    <p className="font-medium">Notificaciones de escritorio</p>
+                    <p className="text-sm text-muted-foreground">Recibe alertas en tu escritorio</p>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    Desactivado
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Language */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Globe className="h-5 w-5 text-primary" />
+                Idioma
+              </h3>
+              <div className="space-y-2 pl-7">
+                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-accent/10">
+                  <div>
+                    <p className="font-medium">Idioma de la interfaz</p>
+                    <p className="text-sm text-muted-foreground">Español ( México)</p>
+                  </div>
+                  <Button variant="ghost" size="sm">
+                    Cambiar
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* About */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Info className="h-5 w-5 text-primary" />
+                Acerca de
+              </h3>
+              <div className="space-y-2 pl-7">
+                <div className="p-3 rounded-lg bg-accent/10">
+                  <p className="font-medium">SIARI v1.0.0</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Asistente de IA especializado en agricultura sostenible
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">© 2025 SIARI. Desarrollado por José Carlos</p>
+                </div>
+                <Button variant="ghost" size="sm" className="w-full">
+                  Términos y Condiciones
+                </Button>
+                <Button variant="ghost" size="sm" className="w-full">
+                  Política de Privacidad
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <input ref={fileInputRef} type="file" multiple accept="image/*" onChange={handleFileChange} className="hidden" />
     </div>

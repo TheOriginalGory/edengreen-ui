@@ -2,12 +2,20 @@ import type React from "react"
 import type { Metadata } from "next"
 import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
+import { Cinzel } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import "./globals.css"
 
+const cinzel = Cinzel({
+  subsets: ["latin"],
+  weight: ["400", "700", "900"],
+  variable: "--font-cinzel",
+  display: "swap",
+})
+
 export const metadata: Metadata = {
-  title: "EdenGREEN - Agricultural AI Assistant",
+  title: "SIARI - Agricultural AI Assistant",
   description: "Your intelligent agricultural assistant powered by AI",
   generator: "v0.app",
 }
@@ -19,7 +27,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning className="overflow-hidden h-full">
-      <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased overflow-hidden h-full m-0`}>
+      <body
+        className={`font-sans ${GeistSans.variable} ${GeistMono.variable} ${cinzel.variable} antialiased overflow-hidden h-full m-0`}
+      >
         <Suspense fallback={null}>
           {children}
           <Analytics />
